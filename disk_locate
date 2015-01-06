@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+
+# if you have more than one card you should add the index number to the variable below separated by space character
+# You can list the index numbers with the command "sas3ircu LIST"
+# ex. HBA_CARD_INDEX="0 1 2"
+HBA_CARD_INDICES="0"
+
+#if arg1 starting with gptid/
+if [[ "$1" == gptid/* ]]; then
+    GPTID="$1"
+else
+    # user provided serials may contain '-' whereas sas3ircu doesn't list
+    # devices with serials containing '-' (e.g. WD Disks) 
+    SERIAL="$(echo $1 | tr -d '-')" 
+fi
+
+
+# if gptid or serial is empty
+if [ -z "$GPTID" ] && [ -z "$SERIAL" ]; then
+    echo -e "Error:\tNo GPTID or serial number is specified." >&2
+	echo -e "Usage:\tdisk_locate gptid/XXXX-XXXXX-XXXXXX on" >&2
+	echo -e "Usage:\tdisk_locate serial-number on" >&2
+    echo "" >&2
+	exit 1
+fi 
+
+#get the command 
+CMD="$2"
+
+#if cmd is empty or something other than on/off
+if [ -z "$CMD" ] || ( [[ "$CMD" != on ]] && [[ "$CMD" != off ]] ); then
+    echo -e "Error:\tErroneous or no command. Please specify a command. (on/off)" >&2
+	echo -e "Usage:\tdisk_locate gptid/XXXX-XXXXX-XXXXXX on" >&2
+    echo "" >&2
+	exit 1
+fi 
+
+#if the serial is empty get the serial with gptid
+if [ -z "$SERIAL" ]; then
+    SERIAL="$($PWD/disk_serial $GPTID | grep 'Serial Number:' | awk -F: '{print $2}' | tr -d ' ' | tr -d '\t')"
+fi
+
+#if no serial number exit
+if [ -z "$SERIAL" ]; then
+    echo -e "Error:\tSerial number couldn't be retreived." >&2
+    echo "" >&2
+    exit 1
+fi
+
+# null strings
+ENCLOSURE=""
+SLOT=""
+CARD_INDEX=""
+
+for i in "$HBA_CARD_INDICES"
+do
+    # All disk info from sas3ircu
+    ALL_DISKS="$(sas3ircu $i DISPLAY)"
+
+    # get the enclosure number
+    ENCLOSURE="$(echo "$ALL_DISKS" | grep -B 8 $SERIAL | grep 'Enclosure' | awk -F: '{print $2}' | tr -d ' ')"
+
+    # get the slot number
+    SLOT="$(echo "$ALL_DISKS" | grep -B 8 $SERIAL | grep 'Slot' | awk -F: '{print $2}' | tr -d ' ')"
+
+    # if enclosure is not filled then continue otherwise break
+    if [ -z "$ENCLOSURE" ]; then
+        continue
+    else
+        CARD_INDEX="$i"
+        break
+    fi
+done
+
+# if the enclosure number is empty
+if [ -z "$ENCLOSURE" ]; then
+    echo -e "Error:\tDevice enclosure number couldn't be retreived." >&2
+    echo "" >&2
+    exit 1
+fi
+
+
+# if the slot number is empty
+if [ -z "$SLOT" ]; then
+    echo "Error:    Device slot number couldn't be retreived." >&2
+    echo "" >&2
+    exit 1
+fi
+
+# print the disk info
+echo -e "Serial Number:\t\t$SERIAL"
+echo -e "HBA Card Index:\t\t$CARD_INDEX"
+echo -e "Enclosure Number:\t$ENCLOSURE"
+echo -e "Slot Number:\t\t$SLOT"
+echo ""
+
+if [ "$CMD" == "on" ]; then
+    echo "Running Command: sas3ircu $CARD_INDEX LOCATE $ENCLOSURE:$SLOT ON"
+	#sas3ircu "$CARD_INDEX" LOCATE "$ENCLOSURE":"$SLOT" ON
+	sas3ircu "$CARD_INDEX" LOCATE "$ENCLOSURE":"$SLOT" ON > /dev/null
+
+elif [ "$CMD" == "off" ]; then
+    echo "Running Command: sas3ircu $CARD_INDEX LOCATE $ENCLOSURE:$SLOT OFF"
+	#sas3ircu "$CARD_INDEX" LOCATE "$ENCLOSURE":"$SLOT" OFF
+    sas3ircu "$CARD_INDEX" LOCATE "$ENCLOSURE":"$SLOT" OFF > /dev/null
+
+fi
+
+echo "Done"
+exit 0
