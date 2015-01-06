@@ -18,8 +18,8 @@ fi
 # if gptid or serial is empty
 if [ -z "$GPTID" ] && [ -z "$SERIAL" ]; then
     echo -e "Error:\tNo GPTID or serial number is specified." >&2
-	echo -e "Usage:\tdisk_locate gptid/XXXX-XXXXX-XXXXXX on" >&2
-	echo -e "Usage:\tdisk_locate serial-number on" >&2
+	echo -e "Usage:\tdisk_locate gptid/XXXX-XXXXX-XXXXXX on|off" >&2
+	echo -e "Usage:\tdisk_locate serial-number on|off" >&2
     echo "" >&2
 	exit 1
 fi 
@@ -37,7 +37,18 @@ fi
 
 #if the serial is empty get the serial with gptid
 if [ -z "$SERIAL" ]; then
-    SERIAL="$($PWD/disk_serial $GPTID | grep 'Serial Number:' | awk -F: '{print $2}' | tr -d ' ' | tr -d '\t')"
+    #get drive /dev path
+    DEV_PATH="$(glabel status | grep $GPTID | awk '{print $3}' | sed 's/p.*//g')"
+
+    #if no serial number exit
+    if [ -z "$DEV_PATH" ]; then
+        echo -e "Error:\tDevice path couldn't be retreived." >&2
+        echo "" >&2
+        exit
+    fi
+
+    #get the hdd serial
+    SERIAL="$(smartctl -i /dev/$DEV_PATH | grep 'Serial Number' | awk '{print $3}' | tr -d '-' | tr -d '\t')"
 fi
 
 #if no serial number exit
