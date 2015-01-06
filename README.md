@@ -7,13 +7,13 @@ disk_locate
 ---------
 Locating a disk in a large array is always a problem.
 
-This script is written for a ZFS software RAID system. When a disk dies in ZFS pool ZFS may not automatically indicate the location of the faulted disk. The script takes the GPTID or the serial number of the disk and tries to turn on its indication led. The script uses sas2ircu or sas3ircu to turn on the indication light of the drive. So, I can say that it is LSI dependent.
+This script is written for a ZFS software RAID system. When a disk dies in ZFS pool ZFS may not automatically indicate the location of the faulted disk. The script takes the GPTID or the serial number of the disk and tries to turn on its indication led. The script uses sas2ircu or sas3ircu to turn on the indication light of the disk. So, I can say that it is LSI dependent.
 
 Even if you have an HBA card in IT mode, if you installed its driver you can install sas2ircu and sas3ircu, and use some of its functionality like 'LOCATE' in our case.supports more than one HBA/RAID card. In order to use it, you need to add the index numbers of the cards in the script. By default it only searches for disks on the card with index 0.
 
 disk_serial
 ---------
-This scipt retreives the serial number of disks from their GPTID. It takes the GPTID of the drive, and uses glabel, smartctl (smartmontools) to retreive the serial number of the device. The script takes GPTID because our ZFS system identifies the drives with GPTID. The output of example `zpool status` is given below.
+This scipt retrieves the serial number of disks from their GPTID. It takes the GPTID of the disk, and uses glabel, smartctl (smartmontools) to retrieve the serial number of the device. The script takes GPTID because our ZFS system identifies the disks with GPTID. The output of example `zpool status` is given below.
 
 ```
 # zpool status tank
@@ -62,3 +62,4 @@ Running Command: sas3ircu 0 LOCATE 2:15 OFF
 Done
 ```
 
+NOTE: Serial number convention changes according to the disk manufacturers. The scripts are tested on Seagate and Western Digital disk serials. It might not work on other brands.
