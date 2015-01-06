@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+GPTID="$1"
+
+if [ -z "$GPTID" ]; then
+    echo -e "Error:\tNo GPTID." >&2
+	echo -e "Usage:\tdisk_serial gptid/XXXX-XXXXX-XXXXXX" >&2
+    echo "" >&2
+	exit
+fi 
+
+#get drive /dev path
+DEV_PATH="$(glabel status | grep $GPTID | awk '{print $3}' | sed 's/p.*//g')"
+
+#if no serial number exit
+if [ -z "$DEV_PATH" ]; then
+    echo -e "Error:\tDevice path couldn't be retreived." >&2
+    echo "" >&2
+    exit
+fi
+
+echo -e "Device Path:\t/dev/$DEV_PATH"
+
+#get the hdd serial
+SERIAL="$(smartctl -i /dev/$DEV_PATH | grep 'Serial Number' | awk '{print $3}' | tr -d '-')"
+
+#if no serial number exit
+if [ -z "$SERIAL" ]; then
+    echo -e "Error:\tSerial number couldn't be retreived." >&2
+    echo "" >&2
+    exit
+fi
+
+echo -e "Serial Number:\t$SERIAL"
+exit 0
