@@ -1,7 +1,7 @@
 Disk Utility Tools
 =========
 
-This repo contains some scripts for disk utility in large software/hardware RAID arrays.
+This repo contains some scripts for disk utility in large software RAID arrays.
 
 disk_locate
 ---------
@@ -10,8 +10,6 @@ Locating a disk in a large array is always a problem.
 This script is written for a ZFS software RAID system. When a disk dies in ZFS pool ZFS may not automatically indicate the location of the faulted disk. The script takes the GPTID or the serial number of the disk and tries to turn on its indication led. The script uses sas2ircu or sas3ircu to turn on the indication light of the drive. So, I can say that it is LSI dependent.
 
 Even if you have an HBA card in IT mode, if you installed its driver you can install sas2ircu and sas3ircu, and use some of its functionality like 'LOCATE' in our case.supports more than one HBA/RAID card. In order to use it, you need to add the index numbers of the cards in the script. By default it only searches for disks on the card with index 0.
-
-NOTE: disk_locate script depends on disk_serial script.(will change)
 
 disk_serial
 ---------
